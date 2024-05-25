@@ -34,7 +34,7 @@ these Movers go on quick missions to carry items around.
 * Clone this repo
 
   ```bash
-  git clone <https://github.com/ALAATARAB/magic-movers.git>
+  git clone <https://github.com/ALAATARAB/magic-transporters.git>
   ```
 
 * Install dependencies and Run
