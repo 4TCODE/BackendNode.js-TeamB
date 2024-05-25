@@ -10,11 +10,11 @@ these Movers go on quick missions to carry items around.
 
 * We need to create magic items
 * We need to create magic mover(s) **(done state)**
-    * We can start loading the mover: **(loading state)**
-      * We can unload the mover **(done state)**
-      * We can start the mission **(in a mission state)**
-        * We can end the mission **(done state)**
-    * We can put the mover in resting state only if it was in 'done state' **(resting state)**
+  * We can start loading the mover: **(loading state)**
+    * We can unload the mover **(done state)**
+    * We can start the mission **(in a mission state)**
+      * We can end the mission **(done state)**
+  * We can put the mover in resting state only if it was in *'done state'* **(resting state)**
 * We can get all missions and their information
 
 ## Used Technology
