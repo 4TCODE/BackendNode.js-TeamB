@@ -27,7 +27,7 @@ these Movers go on quick missions to carry items around.
 
 1- We need a Postgresql database (if you don't have it click : [Here](https://www.postgresql.org/download/))
 
-2- Please Follow / Edit the 'src/config/database.ts' folder.
+2- Please (Follow / Edit) the **'src/config/database.ts'** file.
 
 3- Now we are ready for the next steps:
 
@@ -42,10 +42,14 @@ these Movers go on quick missions to carry items around.
   ```bash
     # installing dependencies
     npm install
-
+  ```
+  
+  ```bash
     # development
     npm start
+  ```
 
+  ```bash
     # watch mode
     npm run start:dev
   ```
