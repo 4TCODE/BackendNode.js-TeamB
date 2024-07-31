@@ -4,9 +4,7 @@ import { typeOrmConfig } from "./config/typeorm.config";
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from "@nestjs/config";
-import { MailerModule } from './mailer/mailer.module';
-import { ToolModule } from './tool/tool.module';
-import { TransactionModule } from './transaction/transaction.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -14,9 +12,7 @@ import { TransactionModule } from './transaction/transaction.module';
     ConfigModule.forRoot({isGlobal:true}),
     AuthModule, 
     UserModule,
-    MailerModule, 
-    ToolModule,
-    TransactionModule
+    ProductsModule
   ],
 })
 export class AppModule implements OnModuleInit, OnApplicationBootstrap{

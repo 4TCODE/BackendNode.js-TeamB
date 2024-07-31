@@ -8,7 +8,6 @@ export class AuthorizedGuard implements CanActivate {
     constructor(private readonly jwtService: JwtService,
                 private readonly configService:ConfigService) {}
 
-
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
         const token = this.extractTokenFromHeader(request);

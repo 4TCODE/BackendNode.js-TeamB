@@ -1,6 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Relation } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import bcryptjs from 'bcryptjs'
-import { Place } from "./place.entity";
+
+export enum UserRoles {
+    ADMIN = "admin",
+    USER = "user"
+}
 
 @Entity()
 export class User {
@@ -8,7 +12,7 @@ export class User {
     id:number;
 
     @Column()
-    username:string;
+    name:string;
     
     @Column({unique:true})
     email:string;
@@ -17,13 +21,17 @@ export class User {
     password:string;
     
     @Column()
-    phoneNumber:string;
+    salt:string;
 
-    @Column()
-    salt!:string;
+    @Column({default:true})
+    active: boolean;
 
-    @ManyToOne(()=>Place)
-    place:Place;
+    @Column({
+        type: 'enum',
+        enum: UserRoles,
+        default: UserRoles.USER
+    })
+    role: UserRoles;
 
     async validatePassword(password : string) : Promise<boolean> {
         let hash = await bcryptjs.hash(password,this.salt);

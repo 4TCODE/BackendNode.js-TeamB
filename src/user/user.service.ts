@@ -1,4 +1,3 @@
-import fs from "fs";
 import {
   ConflictException,
   Injectable,
@@ -6,77 +5,78 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { User } from "./entities/user.entity";
+import { User, UserRoles } from "./entities/user.entity";
 import { Repository } from "typeorm";
 import bcryptjs from "bcryptjs";
 import { ConfigService } from "@nestjs/config";
-import { Place } from "./entities/place.entity";
-import path from "path";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { CreateUserDto } from "./dto/create-user.dto";
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Place) private placeRepo: Repository<Place>,
     private readonly configService: ConfigService
   ) {}
 
-  async findOneById(userId: number): Promise<User> {
+  async findUserById(userId: number): Promise<User> {
     let user = await this.userRepo.findOne({
-      where: { id: userId },
-      relations: { place: true },
-      select: { password: false, salt: false },
+      where: { id: userId }
     });
-    if (!user)
+    
+    if (!user || !user.active)
       throw new NotFoundException("There is No Id Like That " + userId);
+    
+    user.password = '$';
+    user.salt = '$';
+    
     return user;
   }
+  
+  async updateUser(userId: number, updateUserDto: UpdateUserDto) : Promise<User> {
+    let user = await this.userRepo.findOne({
+      where: { id: userId }
+    });
+    if (!user || !user.active)
+      throw new NotFoundException("There is No Id Like That " + userId);
 
-  async findOneByEmail(
-    email: string,
-    password: string,
-    verify: boolean
-  ): Promise<User> {
-    let user = await this.userRepo.findOne({ where: { email } });
-    if (!user)
+    if(updateUserDto.password && updateUserDto.newPassword) {
+      let validPassword: boolean = await bcryptjs.compare(updateUserDto.password,user.password);
+      
+      if(!validPassword)
+        throw new ConflictException("The password is not correct, try again...");
+      
+      // hash the new password with the existed salt
+      let newHashedPassword = await bcryptjs.hash(updateUserDto.newPassword,user.salt);
+      user.password = newHashedPassword;
+    }
+    
+    delete updateUserDto['password'];
+    delete updateUserDto['newPassword'];
+
+    Object.assign(user,updateUserDto);
+
+    return await this.userRepo.save(user);
+  }
+
+  async findUserByEmail(email: string) : Promise<User> {
+    let user = await this.userRepo.findOne({where:{email}});
+    if(!user) 
       throw new NotFoundException("There is No Email Like That " + email);
-    if (!verify) return user;
-    if (await user.validatePassword(password)) return user;
-    throw new NotFoundException("There An Error With Email Or Password");
-  }
-
-  async updateUserPassword(userId: number, newPassword: string) {
-    let user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user)
-      throw new NotFoundException("There is No Id Like That " + userId);
-
-    // hash the new password with the existed salt
-    let hashedPassword = await bcryptjs.hash(newPassword, user.salt);
-    user.password = hashedPassword;
-    await this.userRepo.save(user);
     return user;
   }
 
-  async createUser(
-    fullInfo: Partial<User>,
-    countryInfo: { country: string; city: string }
-  ): Promise<User> {
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
     try {
-      let place = await this.placeRepo.findOne({
-        where: { country: countryInfo.country, city: countryInfo.city },
-      });
-      if (!place)
-        throw new ConflictException(
-          `There is no place like that: ${countryInfo.country} ${countryInfo.city}`
-        );
       let salt = await bcryptjs.genSalt();
       let hashedPassword = await bcryptjs.hash(
-        fullInfo.password as string,
+        createUserDto.password as string,
         salt
       );
-      fullInfo.password = hashedPassword;
-      fullInfo.salt = salt;
-      let user = await this.userRepo.save({ ...fullInfo, place });
+      createUserDto.password = hashedPassword;
+      
+      let user: User = await this.userRepo.save({ ...createUserDto,salt });
+
       return user;
     } catch (err) {
       // if the email was used
@@ -85,30 +85,25 @@ export class UserService {
       ) {
         throw new ConflictException("There is an email such that");
       }
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(err);
     }
   }
 
-  async deleteUser(userId: number) {
+  async deactivateUser(userId: number) : Promise<boolean> {
     let user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user)
       throw new NotFoundException("There is no id like that " + userId);
-    await this.userRepo.remove(user);
+    user.active = false;
+    await this.userRepo.update({id:userId},user);
+    return true;
   }
-
-  fillTheCountries() {
-    fs.readFile(path.join(__dirname,'..','..',"countriesData.json"), "utf-8", async (err, data) => {
-      if (err) throw new InternalServerErrorException();
-      let allData: { country: string; cities: string[] }[] = await JSON.parse(data);
-      for (const { country, cities } of allData) {
-        for (const city of cities) {
-          await this.placeRepo.save({ country, city });
-        }
-      }
-    });
-  }
-
-  async getAllCountries() {
-    return await this.placeRepo.find();
+  
+  async promoteUser(userId: number) : Promise<boolean> {
+    let user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user)
+      throw new NotFoundException("There is no id like that " + userId);
+    user.role = UserRoles.ADMIN;
+    await this.userRepo.update({id:userId},user);
+    return true;
   }
 }
